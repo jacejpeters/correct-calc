@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Feet & Inch Workspace Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 40px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .workspace {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .calculator {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      margin-bottom: 25px;
+    }
+
+    .row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    input, select, button {
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-size: 14px;
+    }
+
+    input[type="number"] {
+      width: 70px;
+    }
+
+    input[type="text"] {
+      width: 120px;
+    }
+
+    select {
+      width: 60px;
+      background: white;
+    }
+
+    input:placeholder-shown {
+      background-color: #e2e2e2;
+    }
+
+    input:not(:placeholder-shown) {
+      background-color: white;
+    }
+
+    .remove-row {
+      background: #ff4d4d;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .remove-row:hover {
+      background: #e60000;
+    }
+
+    .add-measurement {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+
+    .result {
+      margin-top: 15px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .new-calc {
+      display: block;
+      margin: 30px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #2c7be5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .remove-calc {
+      float: right;
+      background: #999;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Feet & Inch Calculator Workspace</h1>
+
+<div class="workspace" id="workspace"></div>
+
+<button class="new-calc" onclick="createCalculator()">+ New Calculation</button>
+
+<script>
+function parseInches(input) {
+  if (!input) return 0;
+  let parts = input.trim().split(" ");
+  let total = 0;
+
+  parts.forEach(part => {
+    if (part.includes("/")) {
+      let [num, den] = part.split("/");
+      total += parseFloat(num) / parseFloat(den);
+    } else {
+      total += parseFloat(part);
+    }
+  });
+
+  return total;
+}
+
+function gcd(a, b) {
+  return b ? gcd(b, a % b) : a;
+}
+
+function toFraction(decimal) {
+  let rounded = Math.round(decimal * 16) / 16;
+  let whole = Math.floor(rounded);
+  let frac = rounded - whole;
+
+  let numerator = Math.round(frac * 16);
+  let denominator = 16;
+
+  if (numerator !== 0) {
+    let divisor = gcd(numerator, denominator);
+    numerator /= divisor;
+    denominator /= divisor;
+  }
+
+  if (numerator === 0) return whole.toString();
+  if (whole === 0) return numerator + "/" + denominator;
+  return whole + " " + numerator + "/" + denominator;
+}
+
+function calculateTotal(container) {
+  let rows = container.querySelectorAll(".row");
+  let totalInches = 0;
+
+  rows.forEach(row => {
+    let sign = row.querySelector(".sign").value;
+    let feet = parseFloat(row.querySelector(".feet").value) || 0;
+    let inches = parseInches(row.querySelector(".inches").value);
+    let measurement = feet * 12 + inches;
+    totalInches += (sign === "+") ? measurement : -measurement;
+  });
+
+  let resultFeet = Math.floor(totalInches / 12);
+  let remainingInches = totalInches - resultFeet * 12;
+
+  container.querySelector(".result").innerText =
+    resultFeet + " ft " + toFraction(remainingInches) + " in";
+}
+
+function addRow(container) {
+  let div = document.createElement("div");
+  div.className = "row";
+
+  div.innerHTML = `
+    <select class="sign">
+      <option value="+">+</option>
+      <option value="-">-</option>
+    </select>
+    <input type="number" class="feet" placeholder="ft">
+    <input type="text" class="inches" placeholder="in (e.g. 5 3/4)">
+    <button class="remove-row">X</button>
+  `;
+
+  container.querySelector(".rows").appendChild(div);
+
+  div.querySelectorAll("input, select").forEach(el => {
+    el.addEventListener("input", () => calculateTotal(container));
+  });
+
+  div.querySelector(".remove-row").onclick = () => {
+    div.remove();
+    calculateTotal(container);
+  };
+}
+
+function createCalculator() {
+  let workspace = document.getElementById("workspace");
+
+  let wrapper = document.createElement("div");
+  wrapper.className = "calculator";
+
+  wrapper.innerHTML = `
+    <button class="remove-calc">Remove</button>
+    <div class="rows"></div>
+    <button class="add-measurement">+ Add Measurement</button>
+    <div class="result">0 ft 0 in</div>
+  `;
+
+  workspace.appendChild(wrapper);
+
+  wrapper.querySelector(".add-measurement").onclick = () => addRow(wrapper);
+  wrapper.querySelector(".remove-calc").onclick = () => wrapper.remove();
+
+  addRow(wrapper);
+}
+
+createCalculator();
+</script>
+
+</body>
+</html>
